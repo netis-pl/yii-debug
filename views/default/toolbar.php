@@ -6,8 +6,14 @@
  */
 
 $url = $panels['request']->getUrl();
+$reportsUrl = Yii::app()->createUrl('/debug/index');
 ?>
 <div id="yii2-debug-toolbar">
+    <div class="yii2-debug-toolbar-block">
+        <div>
+            <a href="<?php echo $reportsUrl; ?>" class="btn btn-primary" title="Show all reports" target="_blank">Show all reports</a>
+        </div>
+    </div>
 	<?php foreach ($panels as $panel): ?>
 		<?php echo $panel->getSummary(); ?>
 	<?php endforeach; ?>

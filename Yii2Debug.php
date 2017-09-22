@@ -76,6 +76,10 @@ class Yii2Debug extends CApplicationComponent
 	 */
 	public function init()
 	{
+	    if (!isset(Yii::app()->session['DEBUG']) || Yii::app()->session['DEBUG'] === false) {
+	        return;
+        }
+
 		parent::init();
 		if (!$this->enabled) return;
 
@@ -125,7 +129,10 @@ class Yii2Debug extends CApplicationComponent
 	 */
 	public function getTag()
 	{
-		if ($this->_tag === null) $this->_tag = uniqid();
+		if ($this->_tag === null) {
+		    $this->_tag = uniqid();
+        }
+
 		return $this->_tag;
 	}
 
@@ -135,21 +142,25 @@ class Yii2Debug extends CApplicationComponent
 	protected function corePanels()
 	{
 		return array(
-			'config' => array(
-				'class' => 'Yii2ConfigPanel',
-			),
+//			'config' => array(
+//				'class' => 'Yii2ConfigPanel',
+//			),
 			'request' => array(
 				'class' => 'Yii2RequestPanel',
 			),
 			'log' => array(
 				'class' => 'Yii2LogPanel',
 			),
-			'profiling' => array(
-				'class' => 'Yii2ProfilingPanel',
-			),
+//			'profiling' => array(
+//				'class' => 'Yii2ProfilingPanel',
+//			),
+
 			'db' => array(
 				'class' => 'Yii2DbPanel',
 			),
+//            'related' => array(
+//                'class' => 'debug.panels.Yii2RelatedPanel',
+//            ),
 		);
 	}
 
@@ -210,8 +221,22 @@ JS
 	 */
 	protected function onEndRequest($event)
 	{
+	    $this->markAjaxHeader();
 		$this->processDebug();
 	}
+
+	protected function markAjaxHeader()
+    {
+        /** @var CHttpRequest $request */
+        $request = Yii::app()->getRequest();
+        if (!$request->getIsAjaxRequest()) {
+            return;
+        }
+
+        header('Yii-Debug: AJAX-Request');
+        header('Yii-Debug-Parent: '.$this->getParentTag());
+        return;
+    }
 
 	/**
 	 * Log processing routine.
@@ -237,7 +262,43 @@ JS
 
 		file_put_contents("$path/{$this->getTag()}.data", serialize($data));
 		$this->updateIndexFile("$path/index.data", $data['summary']);
+		$this->updateParentTagsFile("$path/ajax.data");
 	}
+
+    protected function updateParentTagsFile($path)
+    {
+        if (!file_exists($path)) {
+            touch($path);
+        }
+
+        $data = file_get_contents($path);
+        $data = $data !== '' ? unserialize($data) : [];
+
+        if (Yii::app()->getRequest()->getIsAjaxRequest()) {
+            $parent = $this->getParentTag($path);
+            if (isset($data[$parent])){
+                $data[$parent] = $data[$parent].','.$this->_tag;
+            } else {
+                $data[] = $this->_tag;
+            }
+            file_put_contents($path, serialize($data));
+            return;
+        }
+
+        file_put_contents($path, serialize(array_merge($data, [$this->_tag => ''])));
+        return;
+    }
+
+	protected function getParentTag()
+    {
+        $path = $this->logPath.'/ajax.data';
+        if (!file_exists($path) || ($data = file_get_contents($path)) === '') {
+            return null;
+        }
+
+        $data = array_keys(unserialize($data));
+        return $data[count($data) - 1];
+    }
 
 	/**
 	 * Updates index file with summary log data
@@ -420,6 +481,7 @@ JS
 		$request = Yii::app()->getRequest();
 
 		return array(
+		    'id' => $this->getId(),
 			'tag' => $this->getTag(),
 			'url' => $request->getHostInfo() . $request->getUrl(),
 			'ajax' => $request->getIsAjaxRequest(),
@@ -429,4 +491,27 @@ JS
 			'time' => time(),
 		);
 	}
+
+	protected function getId()
+    {
+        $path = "$this->logPath/index.data";
+        if (!file_exists($path)) {
+            return 1;
+        }
+
+        $data = file_get_contents($path);
+        $data = unserialize($data);
+
+        if (empty($data)) {
+            return 1;
+        }
+
+        $lastRequest = end($data);
+
+        if ($lastRequest['code'] === 302 || Yii::app()->getRequest()->getIsAjaxRequest()) {
+            return $lastRequest['id'];
+        }
+
+        return $lastRequest['id'] + 1;
+    }
 }
