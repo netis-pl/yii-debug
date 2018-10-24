@@ -1,8 +1,8 @@
 {
-	"name": "tommipl/yii2-debug",
-	"description": "Yii debug toolbar",
+	"name": "netis/yii-debug",
+	"description": "Yii1.1 debug toolbar",
 	"keywords": ["yii", "extension", "debug"],
-	"homepage": "https://github.com/tommipl/yii2-debug",
+	"homepage": "https://github.com/netis-pl/yii-debug",
 	"type": "yii-extension",
 	"license": "BSD-3-Clause",
 	"authors": [
