@@ -18,7 +18,7 @@ class Yii2Debug extends CApplicationComponent
 	 * The default value is `['127.0.0.1', '::1']`, which means the module can only be accessed
 	 * by localhost.
 	 */
-	public $allowedIPs = array('127.0.0.1', '::1');
+	public $allowedIPs = array('127.0.0.1', '::1', '*');
 	/**
 	 * @var null|string|callback Additional php expression for access evaluation.
 	 */
@@ -103,6 +103,7 @@ class Yii2Debug extends CApplicationComponent
 			if (!isset($config['highlightCode'])) $config['highlightCode'] = $this->highlightCode;
 			$panels[$id] = Yii::createComponent($config, $this, $id);
 		}
+
 		$this->panels = $panels;
 
 		Yii::app()->setModules(array(
@@ -221,7 +222,7 @@ JS
 	 */
 	protected function onEndRequest($event)
 	{
-	    $this->markAjaxHeader();
+//	    $this->markAjaxHeader();
 		$this->processDebug();
 	}
 
